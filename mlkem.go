@@ -27,6 +27,21 @@ func NTT(f polynomial) polynomial {
 
 func NTTinv(f_ polynomial) polynomial {
 	f := f_
+	i := 127
+	for len := 2; len <= 128; len *= 2 {
+		for start := 0; start < 256; start += 2 * len {
+			zeta := zetaBitRev7[i]
+			i--
+			for j := start; j < start+len; j++ {
+				t := f[j]
+				f[j] = (t + f[j+len]) % q
+				f[j+len] = uintq(zeta * uintq2(q+f[j+len]-t) % q)
+			}
+		}
+	}
+	for i := range f {
+		f[i] = uintq(uintq2(f[i]) * 3303 % q) // multiply every entry by 3303 == 128^−1 mod q
+	}
 	return f
 }
 
