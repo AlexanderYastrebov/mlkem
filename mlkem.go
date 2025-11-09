@@ -45,6 +45,24 @@ func NTTinv(f_ polynomial) polynomial {
 	return f
 }
 
+func SamplePolyCBD(b []byte) polynomial {
+	var f polynomial
+	eta := len(b) / 64
+	for i := range 256 {
+		var x, y int
+		for j := range eta {
+			x += bit(b, 2*i*eta+j)
+			y += bit(b, 2*i*eta+eta+j)
+		}
+		f[i] = uintq((q + x - y) % q)
+	}
+	return f
+}
+
+func bit(b []byte, i int) int {
+	return (int(b[i/8]) >> (i % 8)) & 1
+}
+
 var zetaBitRev7 = [128]uintq2{
 	1, 1729, 2580, 3289, 2642, 630, 1897, 848,
 	1062, 1919, 193, 797, 2786, 3260, 569, 1746,
