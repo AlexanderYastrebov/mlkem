@@ -66,3 +66,35 @@ func TestSamplePolyCBD(t *testing.T) {
 		}
 	})
 }
+
+func TestSampleNTT(t *testing.T) {
+	testPolynomial := func(f polynomial) bool {
+		for i := range f {
+			if f[i] >= q {
+				return false
+			}
+		}
+		return true
+	}
+
+	t.Run("quick", func(t *testing.T) {
+		f := func(b [34]byte) bool {
+			f := SampleNTT(b[:])
+			return testPolynomial(f)
+		}
+		if err := quick.Check(f, nil); err != nil {
+			t.Error(err)
+		}
+	})
+
+	t.Run("allocs", func(t *testing.T) {
+		b := make([]byte, 34)
+		rand.Read(b)
+		avg := testing.AllocsPerRun(1, func() {
+			_ = SampleNTT(b)
+		})
+		if avg > 0 {
+			t.Errorf("Non-zero allocs: %f", avg)
+		}
+	})
+}

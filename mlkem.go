@@ -1,5 +1,7 @@
 package mlkem
 
+import "crypto/sha3"
+
 const q = 3329
 
 type (
@@ -61,6 +63,28 @@ func SamplePolyCBD(b []byte) polynomial {
 
 func bit(b []byte, i int) int {
 	return (int(b[i/8]) >> (i % 8)) & 1
+}
+
+func SampleNTT(b []byte) polynomial {
+	var a polynomial
+	xof := sha3.NewSHAKE128()
+	xof.Write(b)
+	var c [3]byte
+	j := 0
+	for j < 256 {
+		xof.Read(c[:])
+		d1 := uintq(c[0]) + 256*uintq(c[1]%16)
+		d2 := uintq(c[1]/16) + 16*uintq(c[2])
+		if d1 < q {
+			a[j] = d1
+			j++
+		}
+		if d2 < q && j < 256 {
+			a[j] = d2
+			j++
+		}
+	}
+	return a
 }
 
 var zetaBitRev7 = [128]uintq2{
