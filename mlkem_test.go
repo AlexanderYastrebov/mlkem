@@ -65,6 +65,17 @@ func TestSamplePolyCBD(t *testing.T) {
 			t.Error(err)
 		}
 	})
+
+	t.Run("allocs", func(t *testing.T) {
+		b := make([]byte, 64*3)
+		rand.Read(b)
+		avg := testing.AllocsPerRun(1, func() {
+			_ = SamplePolyCBD(b)
+		})
+		if avg > 0 {
+			t.Errorf("Non-zero allocs: %f", avg)
+		}
+	})
 }
 
 func TestSampleNTT(t *testing.T) {
