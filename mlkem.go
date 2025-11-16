@@ -7,6 +7,7 @@ const q = 3329
 type (
 	uintq      uint16
 	uintq2     uint32
+	intq2      int32 // can store range [-2*q^2, 2*q^2]
 	polynomial [256]uintq
 )
 
@@ -62,6 +63,21 @@ func NTTinv(f_ polynomial) polynomial {
 		f[i] = uintq(uintq2(f[i]) * 3303 % q) // multiply every entry by 3303 == 128^−1 mod q
 	}
 	return f
+}
+
+func MultiplyNTTs(f_, g_ polynomial) polynomial {
+	var h_ polynomial
+	for i := range 128 {
+		h_[2*i], h_[2*i+1] = BaseCaseMultiply(f_[2*i], f_[2*i+1], g_[2*i], g_[2*i+1], zeta2BitRev7[i])
+	}
+	return h_
+}
+
+func BaseCaseMultiply(a0, a1, b0, b1 uintq, g intq2) (uintq, uintq) {
+	a0_, a1_, b0_, b1_ := intq2(a0), intq2(a1), intq2(b0), intq2(b1)
+	c0_ := a0_*b0_ + ((a1_*b1_)%q)*g
+	c1_ := a0_*b1_ + a1_*b0_
+	return uintq((c0_ + q*q) % q), uintq(c1_ % q)
 }
 
 func SamplePolyCBD(b []byte) polynomial {
@@ -148,8 +164,8 @@ func KPKEKeyGen(d []byte, k byte) {
 		N++
 	}
 	// 𝐭 ← 𝐀 ∘ 𝐬 + 𝐞
-	//t_ := make([]polynomial, k)
-	//t_ = VectorAdd(MatrixMultiplyNTTs(A_, s_), e_)
+	// t_ := make([]polynomial, k)
+	// t_ = VectorAdd(MatrixMultiplyNTTs(A_, s_), e_)
 }
 
 var zetaBitRev7 = [128]uintq2{
@@ -169,4 +185,23 @@ var zetaBitRev7 = [128]uintq2{
 	1063, 319, 2773, 757, 2099, 561, 2466, 2594,
 	2804, 1092, 403, 1026, 1143, 2150, 2775, 886,
 	1722, 1212, 1874, 1029, 2110, 2935, 885, 2154,
+}
+
+var zeta2BitRev7 = [128]intq2{
+	17, -17, 2761, -2761, 583, -583, 2649, -2649,
+	1637, -1637, 723, -723, 2288, -2288, 1100, -1100,
+	1409, -1409, 2662, -2662, 3281, -3281, 233, -233,
+	756, -756, 2156, -2156, 3015, -3015, 3050, -3050,
+	1703, -1703, 1651, -1651, 2789, -2789, 1789, -1789,
+	1847, -1847, 952, -952, 1461, -1461, 2687, -2687,
+	939, -939, 2308, -2308, 2437, -2437, 2388, -2388,
+	733, -733, 2337, -2337, 268, -268, 641, -641,
+	1584, -1584, 2298, -2298, 2037, -2037, 3220, -3220,
+	375, -375, 2549, -2549, 2090, -2090, 1645, -1645,
+	1063, -1063, 319, -319, 2773, -2773, 757, -757,
+	2099, -2099, 561, -561, 2466, -2466, 2594, -2594,
+	2804, -2804, 1092, -1092, 403, -403, 1026, -1026,
+	1143, -1143, 2150, -2150, 2775, -2775, 886, -886,
+	1722, -1722, 1212, -1212, 1874, -1874, 1029, -1029,
+	2110, -2110, 2935, -2935, 885, -885, 2154, -2154,
 }
