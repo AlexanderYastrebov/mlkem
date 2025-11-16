@@ -10,6 +10,23 @@ type (
 	polynomial [256]uintq
 )
 
+func Add(a, b polynomial) polynomial {
+	var c polynomial
+	for i := range a {
+		c[i] = (a[i] + b[i]) % q
+	}
+	return c
+}
+
+func VectorAdd(a, b []polynomial) []polynomial {
+	k := len(a)
+	c := make([]polynomial, k)
+	for i := range k {
+		c[i] = Add(a[i], b[i])
+	}
+	return c
+}
+
 func NTT(f polynomial) polynomial {
 	f_ := f
 	i := 1
@@ -85,6 +102,54 @@ func SampleNTT(b []byte) polynomial {
 		}
 	}
 	return a
+}
+
+// PRF𝜂(𝑠, 𝑏) ∶= SHAKE256(𝑠‖𝑏, 8 ⋅ 64 ⋅ 𝜂)
+func PRF(s []byte, b byte, eta int) []byte {
+	h := sha3.NewSHAKE256()
+	h.Write(s)
+	h.Write([]byte{b})
+	r := make([]byte, 64*eta)
+	h.Read(r)
+	return r
+}
+
+func KPKEKeyGen(d []byte, k byte) {
+	const eta = 2
+
+	var b [64 + 2]byte
+	g := sha3.New512()
+	g.Write(d)
+	g.Write([]byte{k})
+	g.Sum(b[:])
+
+	var ro [32 + 2]byte
+	copy(ro[:], b[:32])
+	sigma := b[32:]
+	var N byte
+	A_ := make([][]polynomial, k)
+	for i := range k {
+		A_[i] = make([]polynomial, k)
+	}
+	for i := range k {
+		for j := range k {
+			ro[32], ro[33] = j, i
+			A_[i][j] = SampleNTT(ro[:])
+		}
+	}
+	s_ := make([]polynomial, k)
+	for i := range k {
+		s_[i] = NTT(SamplePolyCBD(PRF(sigma, N, eta)))
+		N++
+	}
+	e_ := make([]polynomial, k)
+	for i := range k {
+		e_[i] = NTT(SamplePolyCBD(PRF(sigma, N, eta)))
+		N++
+	}
+	// 𝐭 ← 𝐀 ∘ 𝐬 + 𝐞
+	//t_ := make([]polynomial, k)
+	//t_ = VectorAdd(MatrixMultiplyNTTs(A_, s_), e_)
 }
 
 var zetaBitRev7 = [128]uintq2{
