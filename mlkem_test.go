@@ -18,6 +18,23 @@ func (polynomial) Generate(*mrand.Rand, int) reflect.Value {
 	return reflect.ValueOf(f)
 }
 
+func multiply(f, g polynomial) polynomial {
+	const n = len(polynomial{})
+	var t [n * 2]uintq
+	for i := range n {
+		for j := range n {
+			fg := uintq2(f[i]) * uintq2(g[j]) % q
+			t[i+j] = (t[i+j] + uintq(fg)) % q
+		}
+	}
+	for i := range n {
+		t[i] = (q + t[i] - t[i+n]) % q
+	}
+	var h polynomial
+	copy(h[:], t[:n])
+	return h
+}
+
 func testNTTRoundtrip(f polynomial) bool {
 	return f == NTTinv(NTT(f))
 }
@@ -37,6 +54,16 @@ func TestNTT(t *testing.T) {
 }
 
 func TestMultiplyNTTs(t *testing.T) {
+	t.Run("multiply", func(t *testing.T) {
+		f := func(f, g polynomial) bool {
+			h1 := multiply(f, g)
+			h2 := NTTinv(MultiplyNTTs(NTT(f), NTT(g)))
+			return h1 == h2
+		}
+		if err := quick.Check(f, nil); err != nil {
+			t.Error(err)
+		}
+	})
 	t.Run("associative", func(t *testing.T) {
 		f := func(a, b, c polynomial) bool {
 			// (a · b) · c = a · (b · c)
