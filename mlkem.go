@@ -86,16 +86,12 @@ func SamplePolyCBD(b []byte) polynomial {
 	for i := range 256 {
 		var x, y int
 		for j := range eta {
-			x += bit(b, 2*i*eta+j)
-			y += bit(b, 2*i*eta+eta+j)
+			x += getBit(b, 2*i*eta+j)
+			y += getBit(b, 2*i*eta+eta+j)
 		}
 		f[i] = uintq((q + x - y) % q)
 	}
 	return f
-}
-
-func bit(b []byte, i int) int {
-	return (int(b[i/8]) >> (i % 8)) & 1
 }
 
 func SampleNTT(b []byte) polynomial {
@@ -130,42 +126,79 @@ func PRF(s []byte, b byte, eta int) []byte {
 	return r
 }
 
-func KPKEKeyGen(d []byte, k byte) {
-	const eta = 2
-
-	var b [64 + 2]byte
+func KPKEKeyGen(d []byte, k, eta1 byte) ([]byte, []byte) {
+	var b [64]byte
 	g := sha3.New512()
 	g.Write(d)
 	g.Write([]byte{k})
 	g.Sum(b[:])
+	ro, sigma := b[:32], b[32:]
 
-	var ro [32 + 2]byte
-	copy(ro[:], b[:32])
-	sigma := b[32:]
-	var N byte
+	var roji [32 + 2]byte
+	copy(roji[:], ro)
 	A_ := make([][]polynomial, k)
 	for i := range k {
 		A_[i] = make([]polynomial, k)
-	}
-	for i := range k {
 		for j := range k {
-			ro[32], ro[33] = j, i
-			A_[i][j] = SampleNTT(ro[:])
+			roji[32], roji[33] = j, i
+			A_[i][j] = SampleNTT(roji[:])
 		}
 	}
+
+	var N byte
 	s_ := make([]polynomial, k)
 	for i := range k {
-		s_[i] = NTT(SamplePolyCBD(PRF(sigma, N, eta)))
+		s_[i] = NTT(SamplePolyCBD(PRF(sigma, N, int(eta1))))
 		N++
 	}
 	e_ := make([]polynomial, k)
 	for i := range k {
-		e_[i] = NTT(SamplePolyCBD(PRF(sigma, N, eta)))
+		e_[i] = NTT(SamplePolyCBD(PRF(sigma, N, int(eta1))))
 		N++
 	}
-	// 𝐭 ← 𝐀 ∘ 𝐬 + 𝐞
-	// t_ := make([]polynomial, k)
-	// t_ = VectorAdd(MatrixMultiplyNTTs(A_, s_), e_)
+
+	t_ := VectorAdd(MatrixMultiplyNTTs(A_, s_), e_)
+
+	ekPKE := make([]byte, 0, int(k)*(32*12)+32)
+	for i := range k {
+		ekPKE = append(ekPKE, ByteEncode(t_[i])...)
+	}
+	ekPKE = append(ekPKE, ro...)
+
+	pkPKE := make([]byte, 0, int(k)*32*12)
+	for i := range k {
+		pkPKE = append(pkPKE, ByteEncode(s_[i])...)
+	}
+	return ekPKE, pkPKE
+}
+
+func MatrixMultiplyNTTs(A_ [][]polynomial, s_ []polynomial) []polynomial {
+	k := len(A_)
+	r_ := make([]polynomial, k)
+	for i := range k {
+		for j := range k {
+			r_[i] = Add(r_[i], Add(A_[i][j], s_[j]))
+		}
+	}
+	return r_
+}
+
+func ByteEncode(f polynomial) []byte {
+	r := make([]byte, len(f)*12/8)
+	for i, a := range f {
+		for j := range 12 {
+			setBit(r, i*12+j, int((a>>j)&1))
+		}
+	}
+	return r
+}
+
+func getBit(b []byte, i int) int {
+	return (int(b[i/8]) >> (i % 8)) & 1
+}
+
+func setBit(b []byte, i int, v int) {
+	b[i/8] |= byte((v << (i % 8)))
 }
 
 var zetaBitRev7 = [128]uintq2{

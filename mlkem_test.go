@@ -172,3 +172,17 @@ func TestSampleNTT(t *testing.T) {
 		}
 	})
 }
+
+func TestKPKEKeyGen(t *testing.T) {
+	//             k eta1 eta2 du dv
+	// ML-KEM-512  2 3    2    10 4
+	// ML-KEM-768  3 2    2    10 4
+	// ML-KEM-1024 4 2    2    11 5
+
+	var d [32]byte
+	const k, eta1 = 2, 3
+	ekPKE, _ := KPKEKeyGen(d[:], k, eta1)
+
+	t.Logf("ekPKE: % x", ekPKE)
+	// t.Logf("dkPKE: % x", dkPKE)
+}
