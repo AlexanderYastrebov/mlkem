@@ -116,6 +116,13 @@ func SampleNTT(b []byte) polynomial {
 	return a
 }
 
+// H(𝑠) ∶= SHA3-256(𝑠)
+func H(s []byte) []byte {
+	h := sha3.New256()
+	h.Write(s)
+	return h.Sum(nil)
+}
+
 // PRF𝜂(𝑠, 𝑏) ∶= SHAKE256(𝑠‖𝑏, 8 ⋅ 64 ⋅ 𝜂)
 func PRF(s []byte, b byte, eta int) []byte {
 	h := sha3.NewSHAKE256()
@@ -191,6 +198,17 @@ func ByteEncode(f polynomial) []byte {
 		}
 	}
 	return r
+}
+
+func KeyGen_internal(d, z []byte, k, eta1 byte) ([]byte, []byte) {
+	ekPKE, dkPKE := KPKEKeyGen(d, k, eta1)
+	ek := ekPKE
+	dk := make([]byte, 0, len(dkPKE)+len(ek)+32+len(z))
+	dk = append(dk, dkPKE...)
+	dk = append(dk, ek...)
+	dk = append(dk, H(ek)...)
+	dk = append(dk, z...)
+	return ek, dk
 }
 
 func getBit(b []byte, i int) int {
