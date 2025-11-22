@@ -186,3 +186,12 @@ func TestKPKEKeyGen(t *testing.T) {
 	t.Logf("ekPKE: % x", ekPKE)
 	// t.Logf("dkPKE: % x", dkPKE)
 }
+
+func TestByteEncodeDecode(t *testing.T) {
+	f := func(f polynomial) bool {
+		return f == ByteDecode(ByteEncode(f))
+	}
+	if err := quick.Check(f, nil); err != nil {
+		t.Error(err)
+	}
+}
