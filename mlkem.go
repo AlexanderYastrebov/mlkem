@@ -191,7 +191,7 @@ func MatrixMultiplyNTTs(A_ [][]polynomial, s_ []polynomial) []polynomial {
 }
 
 func ByteEncode(f polynomial) []byte {
-	r := make([]byte, len(f)*12/8)
+	r := make([]byte, 384)
 	for i, a := range f {
 		for j := range 12 {
 			setBit(r, i*12+j, int((a>>j)&1))
@@ -209,6 +209,28 @@ func KeyGen_internal(d, z []byte, k, eta1 byte) ([]byte, []byte) {
 	dk = append(dk, H(ek)...)
 	dk = append(dk, z...)
 	return ek, dk
+}
+
+func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2 byte) []byte {
+	t_ := make([]polynomial, 0, k)
+	for i := range k {
+		t_ = append(t_, ByteDecode(ekPKE[int(i)*384:]))
+	}
+	_ = t_
+	var c []byte
+	return c
+}
+
+func ByteDecode(b []byte) polynomial {
+	var f polynomial
+	for i := range f {
+		var a uintq
+		for j := range 12 {
+			a |= uintq(getBit(b, i*12+j) << j)
+		}
+		f[i] = a
+	}
+	return f
 }
 
 func getBit(b []byte, i int) int {
