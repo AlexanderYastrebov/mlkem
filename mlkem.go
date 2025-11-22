@@ -65,6 +65,15 @@ func NTTinv(f_ polynomial) polynomial {
 	return f
 }
 
+func VectorNTTinv(f_ []polynomial) []polynomial {
+	k := len(f_)
+	g := make([]polynomial, k)
+	for i := range k {
+		g[i] = NTTinv(f_[i])
+	}
+	return g
+}
+
 func MultiplyNTTs(f_, g_ polynomial) polynomial {
 	var h_ polynomial
 	for i := range 128 {
@@ -201,12 +210,42 @@ func KeyGen_internal(d, z []byte, k, eta1 byte) ([]byte, []byte) {
 	return ek, dk
 }
 
-func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2 byte) []byte {
+func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2 int) []byte {
 	t_ := make([]polynomial, 0, k)
 	for i := range k {
-		t_ = append(t_, ByteDecode(ekPKE[int(i)*384:]))
+		t_ = append(t_, ByteDecode(ekPKE[384*i:]))
 	}
+	ro := ekPKE[384*k : 384*k+32]
+
+	var roji [32 + 2]byte
+	copy(roji[:], ro)
+	A_ := make([][]polynomial, k)
+	for i := range k {
+		A_[i] = make([]polynomial, k)
+		for j := range k {
+			roji[32], roji[33] = byte(j), byte(i)
+			A_[i][j] = SampleNTT(roji[:])
+		}
+	}
+
+	var N byte
+	y_ := make([]polynomial, k)
+	for i := range k {
+		y_[i] = NTT(SamplePolyCBD(PRF(r, N, eta1)))
+		N++
+	}
+	e1 := make([]polynomial, k)
+	for i := range k {
+		e1[i] = SamplePolyCBD(PRF(r, N, eta2))
+		N++
+	}
+	e2 := SamplePolyCBD(PRF(r, N, eta2))
+
+	u := VectorAdd(VectorNTTinv(MatrixMultiplyNTTs(A_, y_)), e1)
+	// 𝜇 ← Decompress1(ByteDecode1(𝑚))
 	_ = t_
+	_ = e2
+	_ = u
 	var c []byte
 	return c
 }
