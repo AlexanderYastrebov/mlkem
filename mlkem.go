@@ -19,6 +19,14 @@ func Add(a, b polynomial) polynomial {
 	return c
 }
 
+func Sub(a, b polynomial) polynomial {
+	var c polynomial
+	for i := range a {
+		c[i] = (q + a[i] - b[i]) % q
+	}
+	return c
+}
+
 func VectorAdd(a, b []polynomial) []polynomial {
 	k := len(a)
 	c := make([]polynomial, k)
@@ -147,7 +155,7 @@ func KPKEKeyGen(d []byte, k, eta1 byte) ([]byte, []byte) {
 	g := sha3.New512()
 	g.Write(d)
 	g.Write([]byte{k})
-	g.Sum(b[:])
+	g.Sum(b[:0])
 	ro, sigma := b[:32], b[32:]
 
 	var roji [32 + 2]byte
@@ -181,11 +189,11 @@ func KPKEKeyGen(d []byte, k, eta1 byte) ([]byte, []byte) {
 	}
 	ekPKE = append(ekPKE, ro...)
 
-	pkPKE := make([]byte, 0, int(k)*32*12)
+	dkPKE := make([]byte, 0, int(k)*32*12)
 	for i := range k {
-		pkPKE = append(pkPKE, ByteEncodeQ(s_[i])...)
+		dkPKE = append(dkPKE, ByteEncodeQ(s_[i])...)
 	}
-	return ekPKE, pkPKE
+	return ekPKE, dkPKE
 }
 
 func MatrixMultiplyNTTs(A_ [][]polynomial, s_ []polynomial) []polynomial {
@@ -275,9 +283,9 @@ func KPKEDecrypt(dkPKE []byte, c []byte, k, eta1, eta2, du, dv int) []byte {
 
 	s_ := make([]polynomial, k)
 	for i := range k {
-		s_[i] = ByteDecodeQ(dkPKE[32*i : 32*(i+1)])
+		s_[i] = ByteDecodeQ(dkPKE[32*12*i : 32*12*(i+1)])
 	}
-	w := Add(v, NTTinv(VectorMultiplyNTTs(s_, u_)))
+	w := Sub(v, NTTinv(VectorMultiplyNTTs(s_, u_)))
 	m := ByteEncode(Compress(w, 1), 1)
 
 	return m

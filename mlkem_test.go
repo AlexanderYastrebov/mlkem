@@ -266,11 +266,24 @@ func TestKPKE(t *testing.T) {
 	// ML-KEM-512  2 3    2    10 4
 	// ML-KEM-768  3 2    2    10 4
 	// ML-KEM-1024 4 2    2    11 5
+	const k, eta1, eta2, du, dv = 2, 3, 2, 10, 4
 
 	var d [32]byte
-	const k, eta1 = 2, 3
+	rand.Read(d[:])
 	ekPKE, dkPKE := KPKEKeyGen(d[:], k, eta1)
 
 	t.Logf("ekPKE: %x", ekPKE)
 	t.Logf("dkPKE: %x", dkPKE)
+
+	var r [32]byte
+	rand.Read(r[:])
+
+	var m [32]byte
+	copy(m[:], "Hello World")
+	t.Logf("message: %s", m)
+
+	c := KPKEEncrypt(ekPKE, m[:], r[:], k, eta1, eta2, du, dv)
+
+	dm := KPKEDecrypt(dkPKE, c, k, eta1, eta2, du, dv)
+	t.Logf("decrypted message: %s", dm)
 }
