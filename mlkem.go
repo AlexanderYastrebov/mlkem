@@ -177,13 +177,13 @@ func KPKEKeyGen(d []byte, k, eta1 byte) ([]byte, []byte) {
 
 	ekPKE := make([]byte, 0, int(k)*(32*12)+32)
 	for i := range k {
-		ekPKE = append(ekPKE, ByteEncode(t_[i])...)
+		ekPKE = append(ekPKE, ByteEncodeQ(t_[i])...)
 	}
 	ekPKE = append(ekPKE, ro...)
 
 	pkPKE := make([]byte, 0, int(k)*32*12)
 	for i := range k {
-		pkPKE = append(pkPKE, ByteEncode(s_[i])...)
+		pkPKE = append(pkPKE, ByteEncodeQ(s_[i])...)
 	}
 	return ekPKE, pkPKE
 }
@@ -213,7 +213,7 @@ func KeyGen_internal(d, z []byte, k, eta1 byte) ([]byte, []byte) {
 func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2 int) []byte {
 	t_ := make([]polynomial, 0, k)
 	for i := range k {
-		t_ = append(t_, ByteDecode(ekPKE[384*i:]))
+		t_ = append(t_, ByteDecodeQ(ekPKE[384*i:]))
 	}
 	ro := ekPKE[384*k : 384*k+32]
 
@@ -250,7 +250,7 @@ func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2 int) []byte {
 	return c
 }
 
-func ByteEncode(f polynomial) []byte {
+func ByteEncodeQ(f polynomial) []byte {
 	b := make([]byte, 384)
 	for i, a := range f {
 		for j := range 12 {
@@ -260,7 +260,7 @@ func ByteEncode(f polynomial) []byte {
 	return b
 }
 
-func ByteDecode(b []byte) polynomial {
+func ByteDecodeQ(b []byte) polynomial {
 	var f polynomial
 	for i := range f {
 		var a uintq

@@ -189,12 +189,14 @@ func TestKPKEKeyGen(t *testing.T) {
 }
 
 func TestByteEncodeDecode(t *testing.T) {
-	f := func(f polynomial) bool {
-		return f == ByteDecode(ByteEncode(f))
-	}
-	if err := quick.Check(f, nil); err != nil {
-		t.Error(err)
-	}
+	t.Run("q", func(t *testing.T) {
+		f := func(f polynomial) bool {
+			return f == ByteDecodeQ(ByteEncodeQ(f))
+		}
+		if err := quick.Check(f, nil); err != nil {
+			t.Error(err)
+		}
+	})
 }
 
 func TestCompressDecompress(t *testing.T) {
