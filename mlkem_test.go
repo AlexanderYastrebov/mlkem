@@ -19,6 +19,12 @@ func (polynomial) Generate(*mrand.Rand, int) reflect.Value {
 	return reflect.ValueOf(f)
 }
 
+func modPow2d(v *[256]uint, d int) {
+	for i := range v {
+		v[i] %= (1 << d)
+	}
+}
+
 func multiply(f, g polynomial) polynomial {
 	const n = len(polynomial{})
 	var t [n * 2]uintq
@@ -197,19 +203,29 @@ func TestByteEncodeDecode(t *testing.T) {
 			t.Error(err)
 		}
 	})
+
+	t.Run("d", func(t *testing.T) {
+		for i := range 11 {
+			d := i + 1
+			t.Run(fmt.Sprintf("d=%d", d), func(t *testing.T) {
+				f := func(f [256]uint) bool {
+					modPow2d(&f, d)
+					return f == ByteDecode(ByteEncode(f, d), d)
+				}
+				if err := quick.Check(f, nil); err != nil {
+					t.Error(err)
+				}
+			})
+		}
+	})
 }
 
 func TestCompressDecompress(t *testing.T) {
 	t.Run("decompress-compress", func(t *testing.T) {
-		compressed := func(v *[256]uint, d int) {
-			for i := range v {
-				v[i] %= (1 << d)
-			}
-		}
 		for _, d := range []int{1, 4, 5, 10, 11} {
 			t.Run(fmt.Sprintf("d=%d", d), func(t *testing.T) {
 				f := func(y [256]uint) bool {
-					compressed(&y, d)
+					modPow2d(&y, d)
 					return y == Compress(Decompress(y, d), d)
 				}
 				if err := quick.Check(f, nil); err != nil {

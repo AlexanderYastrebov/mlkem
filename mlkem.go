@@ -272,6 +272,28 @@ func ByteDecodeQ(b []byte) polynomial {
 	return f
 }
 
+func ByteEncode(f [256]uint, d int) []byte {
+	b := make([]byte, 32*d)
+	for i, a := range f {
+		for j := range d {
+			setBit(b, i*d+j, int((a>>j)&1))
+		}
+	}
+	return b
+}
+
+func ByteDecode(b []byte, d int) [256]uint {
+	var f [256]uint
+	for i := range f {
+		var a uint
+		for j := range d {
+			a |= uint(getBit(b, i*d+j) << j)
+		}
+		f[i] = a
+	}
+	return f
+}
+
 func Decompress(b [256]uint, d int) polynomial {
 	var f polynomial
 	pow2d := uintq2(1 << d)
