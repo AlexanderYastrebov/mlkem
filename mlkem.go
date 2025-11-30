@@ -193,8 +193,17 @@ func MatrixMultiplyNTTs(A_ [][]polynomial, s_ []polynomial) []polynomial {
 	r_ := make([]polynomial, k)
 	for i := range k {
 		for j := range k {
-			r_[i] = Add(r_[i], Add(A_[i][j], s_[j]))
+			r_[i] = Add(r_[i], MultiplyNTTs(A_[i][j], s_[j]))
 		}
+	}
+	return r_
+}
+
+func VectorMultiplyNTTs(t_ []polynomial, s_ []polynomial) polynomial {
+	k := len(t_)
+	var r_ polynomial
+	for i := range k {
+		r_ = Add(r_, MultiplyNTTs(t_[i], s_[i]))
 	}
 	return r_
 }
@@ -210,7 +219,7 @@ func KeyGen_internal(d, z []byte, k, eta1 byte) ([]byte, []byte) {
 	return ek, dk
 }
 
-func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2 int) []byte {
+func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2, du, dv int) []byte {
 	t_ := make([]polynomial, 0, k)
 	for i := range k {
 		t_ = append(t_, ByteDecodeQ(ekPKE[384*i:]))
@@ -242,11 +251,16 @@ func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2 int) []byte {
 	e2 := SamplePolyCBD(PRF(r, N, eta2))
 
 	u := VectorAdd(VectorNTTinv(MatrixMultiplyNTTs(A_, y_)), e1)
-	// 𝜇 ← Decompress1(ByteDecode1(𝑚))
-	_ = t_
-	_ = e2
-	_ = u
-	var c []byte
+	mu := Decompress(ByteDecode(m, 1), 1)
+	v := Add(Add(NTTinv(VectorMultiplyNTTs(t_, y_)), e2), mu)
+
+	c1 := make([]byte, 0, 32*(du*k+dv))
+	for i := range k {
+		c1 = append(c1, ByteEncode(Compress(u[i], du), du)...)
+	}
+	c2 := ByteEncode(Compress(v, dv), dv)
+	c := append(c1, c2...)
+
 	return c
 }
 
