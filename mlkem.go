@@ -1,6 +1,8 @@
 package mlkem
 
-import "crypto/sha3"
+import (
+	"crypto/sha3"
+)
 
 const q = 3329
 
@@ -228,9 +230,9 @@ func KeyGen_internal(d, z []byte, k, eta1 byte) ([]byte, []byte) {
 }
 
 func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2, du, dv int) []byte {
-	t_ := make([]polynomial, 0, k)
+	t_ := make([]polynomial, k)
 	for i := range k {
-		t_ = append(t_, ByteDecodeQ(ekPKE[384*i:]))
+		t_[i] = ByteDecodeQ(ekPKE[32*12*i : 32*12*(i+1)])
 	}
 	ro := ekPKE[384*k : 384*k+32]
 
