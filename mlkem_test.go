@@ -3,6 +3,7 @@ package mlkem
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"fmt"
 	mrand "math/rand"
 	"reflect"
 	"testing"
@@ -194,4 +195,50 @@ func TestByteEncodeDecode(t *testing.T) {
 	if err := quick.Check(f, nil); err != nil {
 		t.Error(err)
 	}
+}
+
+func TestCompressDecompress(t *testing.T) {
+	t.Run("decompress-compress", func(t *testing.T) {
+		compressed := func(v *[256]uint, d int) {
+			for i := range v {
+				v[i] %= (1 << d)
+			}
+		}
+		for _, d := range []int{1, 4, 5, 10, 11} {
+			t.Run(fmt.Sprintf("d=%d", d), func(t *testing.T) {
+				f := func(y [256]uint) bool {
+					compressed(&y, d)
+					return y == Compress(Decompress(y, d), d)
+				}
+				if err := quick.Check(f, nil); err != nil {
+					t.Error(err)
+				}
+			})
+		}
+	})
+
+	t.Run("compress-decompress", func(t *testing.T) {
+		absDiff := func(a, b uintq) uintq {
+			if a > b {
+				return a - b
+			}
+			return b - a
+		}
+		for _, d := range []int{10, 11} {
+			t.Run(fmt.Sprintf("d=%d", d), func(t *testing.T) {
+				f := func(f polynomial) bool {
+					g := Decompress(Compress(f, d), d)
+					for i := range f {
+						if absDiff(f[i], g[i]) > 2 {
+							return false
+						}
+					}
+					return true
+				}
+				if err := quick.Check(f, nil); err != nil {
+					t.Error(err)
+				}
+			})
+		}
+	})
 }
