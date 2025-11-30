@@ -264,6 +264,25 @@ func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2, du, dv int) []byte {
 	return c
 }
 
+func KPKEDecrypt(dkPKE []byte, c []byte, k, eta1, eta2, du, dv int) []byte {
+	c1 := c[0 : 32*du*k]
+	c2 := c[32*du*k : 32*(du*k+dv)]
+	u_ := make([]polynomial, k)
+	for i := range k {
+		u_[i] = NTT(Decompress(ByteDecode(c1[32*du*i:32*du*(i+1)], du), du))
+	}
+	v := Decompress(ByteDecode(c2, dv), dv)
+
+	s_ := make([]polynomial, k)
+	for i := range k {
+		s_[i] = ByteDecodeQ(dkPKE[32*i : 32*(i+1)])
+	}
+	w := Add(v, NTTinv(VectorMultiplyNTTs(s_, u_)))
+	m := ByteEncode(Compress(w, 1), 1)
+
+	return m
+}
+
 func ByteEncodeQ(f polynomial) []byte {
 	b := make([]byte, 384)
 	for i, a := range f {
