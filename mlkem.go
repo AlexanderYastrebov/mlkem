@@ -350,7 +350,11 @@ func Compress(f polynomial, d int) [256]uint {
 	var b [256]uint
 	pow2d := uintq2(1 << d)
 	for i := range f {
-		b[i] = uint(((uintq2(f[i])*pow2d + q/2) / q) % pow2d)
+		fi := f[i]
+		if fi == q-1 {
+			fi--
+		}
+		b[i] = uint(((uintq2(fi)*pow2d + q/2) / q) % pow2d)
 	}
 	return b
 }
