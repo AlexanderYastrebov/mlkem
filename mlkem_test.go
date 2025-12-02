@@ -246,19 +246,6 @@ func TestCompressDecompress(t *testing.T) {
 			})
 		}
 	})
-
-	t.Run("foo", func(t *testing.T) {
-		const d = 10
-		for i := range uintq(q) {
-			f := polynomial{i}
-			fc := Compress(f, d)
-			g := Decompress(fc, d)
-
-			t.Logf("f: %v", f[0])
-			t.Logf("fc: %v", fc[0])
-			t.Logf("g: %v", g[0])
-		}
-	})
 }
 
 func TestKPKE(t *testing.T) {
