@@ -136,10 +136,10 @@ func SampleNTT(b []byte) polynomial {
 }
 
 // G(𝑑, 𝑘) ∶= SHA3-512(𝑑‖𝑘)
-func G(d []byte, k byte) ([]byte, []byte) {
+func G(d []byte, k []byte) ([]byte, []byte) {
 	g := sha3.New512()
 	g.Write(d)
-	g.Write([]byte{k})
+	g.Write(k)
 	b := g.Sum(nil)
 	return b[:32], b[32:]
 }
@@ -162,7 +162,7 @@ func PRF(s []byte, b byte, eta int) []byte {
 }
 
 func KPKEKeyGen(d []byte, k, eta1 int) ([]byte, []byte) {
-	ro, sigma := G(d, byte(k))
+	ro, sigma := G(d, []byte{byte(k)})
 
 	var roji [32 + 2]byte
 	copy(roji[:], ro)
@@ -234,17 +234,6 @@ func transpose(a [][]polynomial) [][]polynomial {
 	return r
 }
 
-func KeyGen_internal(d, z []byte, k, eta1 int) ([]byte, []byte) {
-	ekPKE, dkPKE := KPKEKeyGen(d, k, eta1)
-	ek := ekPKE
-	dk := make([]byte, 0, len(dkPKE)+len(ek)+32+len(z))
-	dk = append(dk, dkPKE...)
-	dk = append(dk, ek...)
-	dk = append(dk, H(ek)...)
-	dk = append(dk, z...)
-	return ek, dk
-}
-
 func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2, du, dv int) []byte {
 	t_ := make([]polynomial, k)
 	for i := range k {
@@ -307,6 +296,23 @@ func KPKEDecrypt(dkPKE []byte, c []byte, k, du, dv int) []byte {
 	m := ByteEncode(Compress(w, 1), 1)
 
 	return m
+}
+
+func KeyGen_internal(d, z []byte, k, eta1 int) ([]byte, []byte) {
+	ekPKE, dkPKE := KPKEKeyGen(d, k, eta1)
+	ek := ekPKE
+	dk := make([]byte, 0, len(dkPKE)+len(ek)+32+len(z))
+	dk = append(dk, dkPKE...)
+	dk = append(dk, ek...)
+	dk = append(dk, H(ek)...)
+	dk = append(dk, z...)
+	return ek, dk
+}
+
+func Encaps_internal(ek, m []byte, k, eta1, eta2, du, dv int) ([]byte, []byte) {
+	K, r := G(m, H(ek))
+	c := KPKEEncrypt(ek, m, r, k, eta1, eta2, du, dv)
+	return K, c
 }
 
 func ByteEncodeQ(f polynomial) []byte {
