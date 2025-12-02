@@ -152,11 +152,11 @@ func PRF(s []byte, b byte, eta int) []byte {
 	return r
 }
 
-func KPKEKeyGen(d []byte, k, eta1 byte) ([]byte, []byte) {
+func KPKEKeyGen(d []byte, k, eta1 int) ([]byte, []byte) {
 	var b [64]byte
 	g := sha3.New512()
 	g.Write(d)
-	g.Write([]byte{k})
+	g.Write([]byte{byte(k)})
 	g.Sum(b[:0])
 	ro, sigma := b[:32], b[32:]
 
@@ -166,7 +166,7 @@ func KPKEKeyGen(d []byte, k, eta1 byte) ([]byte, []byte) {
 	for i := range k {
 		A_[i] = make([]polynomial, k)
 		for j := range k {
-			roji[32], roji[33] = j, i
+			roji[32], roji[33] = byte(j), byte(i)
 			A_[i][j] = SampleNTT(roji[:])
 		}
 	}
@@ -232,7 +232,7 @@ func VectorMultiplyNTTs(t_ []polynomial, s_ []polynomial) polynomial {
 	return r_
 }
 
-func KeyGen_internal(d, z []byte, k, eta1 byte) ([]byte, []byte) {
+func KeyGen_internal(d, z []byte, k, eta1 int) ([]byte, []byte) {
 	ekPKE, dkPKE := KPKEKeyGen(d, k, eta1)
 	ek := ekPKE
 	dk := make([]byte, 0, len(dkPKE)+len(ek)+32+len(z))

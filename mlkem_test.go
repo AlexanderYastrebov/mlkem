@@ -267,25 +267,31 @@ func TestKPKE(t *testing.T) {
 	// ML-KEM-768  3 2    2    10 4
 	// ML-KEM-1024 4 2    2    11 5
 
-	const k, eta1, eta2, du, dv = 2, 3, 2, 10, 4
-	// const k, eta1, eta2, du, dv = 3, 2, 2, 10, 4
-	// const k, eta1, eta2, du, dv = 4, 2, 2, 11, 5
+	for _, p := range []struct {
+		k, eta1, eta2, du, dv int
+	}{
+		{k: 2, eta1: 3, eta2: 2, du: 10, dv: 4},
+		{k: 3, eta1: 2, eta2: 2, du: 10, dv: 4},
+		{k: 4, eta1: 2, eta2: 2, du: 11, dv: 5},
+	} {
+		t.Run(fmt.Sprintf("k=%d,eta1=%d,eta2=%d,du=%d,dv=%d", p.k, p.eta1, p.eta2, p.du, p.dv), func(t *testing.T) {
+			d := make([]byte, 32)
+			rand.Read(d)
+			ekPKE, dkPKE := KPKEKeyGen(d, p.k, p.eta1)
 
-	d := make([]byte, 32)
-	rand.Read(d)
-	ekPKE, dkPKE := KPKEKeyGen(d, k, eta1)
+			r := make([]byte, 32)
+			rand.Read(r)
 
-	r := make([]byte, 32)
-	rand.Read(r)
+			m := make([]byte, 32)
+			copy(m, "Hello World")
 
-	m := make([]byte, 32)
-	copy(m, "Hello World")
+			c := KPKEEncrypt(ekPKE, m, r, p.k, p.eta1, p.eta2, p.du, p.dv)
 
-	c := KPKEEncrypt(ekPKE, m, r, k, eta1, eta2, du, dv)
+			dm := KPKEDecrypt(dkPKE, c, p.k, p.du, p.dv)
 
-	dm := KPKEDecrypt(dkPKE, c, k, du, dv)
-
-	if !bytes.Equal(m, dm) {
-		t.Errorf("%q != %q", m, dm)
+			if !bytes.Equal(m, dm) {
+				t.Errorf("%q != %q", m, dm)
+			}
+		})
 	}
 }
