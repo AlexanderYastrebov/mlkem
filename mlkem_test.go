@@ -111,7 +111,7 @@ func TestSamplePolyCBD(t *testing.T) {
 	testBinominal := func(f polynomial, eta uintq) bool {
 		// 0 ≤ 𝑓[𝑖] ≤ 𝜂 or 𝑞 − 𝜂 ≤ 𝑓[𝑖] ≤ 𝑞 − 1
 		for i := range f {
-			if !((0 <= f[i] && f[i] <= eta) || (q-eta <= f[i] && f[i] <= q-1)) {
+			if !((f[i] <= eta) || (q-eta <= f[i] && f[i] <= q-1)) {
 				return false
 			}
 		}
