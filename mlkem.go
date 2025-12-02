@@ -330,7 +330,7 @@ func Decaps_internal(dk, c []byte, k, eta1, eta2, du, dv int) []byte {
 	dkPKE := dk[0 : 384*k]
 	ekPKE := dk[384*k : 768*k+32]
 	h := dk[768*k+32 : 768*k+64]
-	z := dk[768*+64 : 768*+96]
+	z := dk[768*k+64 : 768*k+96]
 	m := KPKEDecrypt(dkPKE, c, k, du, dv)
 	K, r := G(m, h)
 	K_ := J(z, c)

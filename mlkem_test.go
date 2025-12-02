@@ -273,3 +273,29 @@ func TestKPKE(t *testing.T) {
 		})
 	}
 }
+
+func TestInternal(t *testing.T) {
+	for _, p := range []struct {
+		name                  string
+		k, eta1, eta2, du, dv int
+	}{
+		{name: "ML-KEM-512", k: 2, eta1: 3, eta2: 2, du: 10, dv: 4},
+		{name: "ML-KEM-768", k: 3, eta1: 2, eta2: 2, du: 10, dv: 4},
+		{name: "ML-KEM-1024", k: 4, eta1: 2, eta2: 2, du: 11, dv: 5},
+	} {
+		t.Run(p.name, func(t *testing.T) {
+			f := func(d, z, m [32]byte) bool {
+				ek, dk := KeyGen_internal(d[:], z[:], p.k, p.eta1)
+
+				K, c := Encaps_internal(ek, m[:], p.k, p.eta1, p.eta2, p.du, p.dv)
+
+				K_ := Decaps_internal(dk, c, p.k, p.eta1, p.eta2, p.du, p.dv)
+
+				return bytes.Equal(K, K_)
+			}
+			if err := quick.Check(f, nil); err != nil {
+				t.Error(err)
+			}
+		})
+	}
+}
