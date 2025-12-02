@@ -249,35 +249,26 @@ func TestCompressDecompress(t *testing.T) {
 }
 
 func TestKPKE(t *testing.T) {
-	//             k eta1 eta2 du dv
-	// ML-KEM-512  2 3    2    10 4
-	// ML-KEM-768  3 2    2    10 4
-	// ML-KEM-1024 4 2    2    11 5
-
 	for _, p := range []struct {
+		name                  string
 		k, eta1, eta2, du, dv int
 	}{
-		{k: 2, eta1: 3, eta2: 2, du: 10, dv: 4},
-		{k: 3, eta1: 2, eta2: 2, du: 10, dv: 4},
-		{k: 4, eta1: 2, eta2: 2, du: 11, dv: 5},
+		{name: "ML-KEM-512", k: 2, eta1: 3, eta2: 2, du: 10, dv: 4},
+		{name: "ML-KEM-768", k: 3, eta1: 2, eta2: 2, du: 10, dv: 4},
+		{name: "ML-KEM-1024", k: 4, eta1: 2, eta2: 2, du: 11, dv: 5},
 	} {
-		t.Run(fmt.Sprintf("k=%d,eta1=%d,eta2=%d,du=%d,dv=%d", p.k, p.eta1, p.eta2, p.du, p.dv), func(t *testing.T) {
-			d := make([]byte, 32)
-			rand.Read(d)
-			ekPKE, dkPKE := KPKEKeyGen(d, p.k, p.eta1)
+		t.Run(p.name, func(t *testing.T) {
+			f := func(d, r, m [32]byte) bool {
+				ekPKE, dkPKE := KPKEKeyGen(d[:], p.k, p.eta1)
 
-			r := make([]byte, 32)
-			rand.Read(r)
+				c := KPKEEncrypt(ekPKE, m[:], r[:], p.k, p.eta1, p.eta2, p.du, p.dv)
 
-			m := make([]byte, 32)
-			copy(m, "Hello World")
+				dm := KPKEDecrypt(dkPKE, c, p.k, p.du, p.dv)
 
-			c := KPKEEncrypt(ekPKE, m, r, p.k, p.eta1, p.eta2, p.du, p.dv)
-
-			dm := KPKEDecrypt(dkPKE, c, p.k, p.du, p.dv)
-
-			if !bytes.Equal(m, dm) {
-				t.Errorf("%q != %q", m, dm)
+				return bytes.Equal(m[:], dm)
+			}
+			if err := quick.Check(f, nil); err != nil {
+				t.Error(err)
 			}
 		})
 	}
