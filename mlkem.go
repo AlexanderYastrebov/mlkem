@@ -209,6 +209,20 @@ func MatrixMultiplyNTTs(A_ [][]polynomial, s_ []polynomial) []polynomial {
 	return r_
 }
 
+func transpose(a [][]polynomial) [][]polynomial {
+	k := len(a)
+	r := make([][]polynomial, k)
+	for i := range k {
+		r[i] = make([]polynomial, k)
+	}
+	for i := range k {
+		for j := range k {
+			r[j][i] = a[i][j]
+		}
+	}
+	return r
+}
+
 func VectorMultiplyNTTs(t_ []polynomial, s_ []polynomial) polynomial {
 	k := len(t_)
 	var r_ polynomial
@@ -260,7 +274,7 @@ func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2, du, dv int) []byte {
 	}
 	e2 := SamplePolyCBD(PRF(r, N, eta2))
 
-	u := VectorAdd(VectorNTTinv(MatrixMultiplyNTTs(A_, y_)), e1)
+	u := VectorAdd(VectorNTTinv(MatrixMultiplyNTTs(transpose(A_), y_)), e1)
 	mu := Decompress(ByteDecode(m, 1), 1)
 	v := Add(Add(NTTinv(VectorMultiplyNTTs(t_, y_)), e2), mu)
 
@@ -274,7 +288,7 @@ func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2, du, dv int) []byte {
 	return c
 }
 
-func KPKEDecrypt(dkPKE []byte, c []byte, k, eta1, eta2, du, dv int) []byte {
+func KPKEDecrypt(dkPKE []byte, c []byte, k, du, dv int) []byte {
 	c1 := c[0 : 32*du*k]
 	c2 := c[32*du*k : 32*(du*k+dv)]
 	u_ := make([]polynomial, k)
@@ -351,6 +365,7 @@ func Compress(f polynomial, d int) [256]uint {
 	pow2d := uintq2(1 << d)
 	for i := range f {
 		fi := f[i]
+		// TODO: fix hack
 		if fi == q-1 {
 			fi--
 		}

@@ -1,6 +1,7 @@
 package mlkem
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
@@ -270,21 +271,21 @@ func TestKPKE(t *testing.T) {
 	// const k, eta1, eta2, du, dv = 3, 2, 2, 10, 4
 	// const k, eta1, eta2, du, dv = 4, 2, 2, 11, 5
 
-	var d [32]byte
-	rand.Read(d[:])
-	ekPKE, dkPKE := KPKEKeyGen(d[:], k, eta1)
+	d := make([]byte, 32)
+	rand.Read(d)
+	ekPKE, dkPKE := KPKEKeyGen(d, k, eta1)
 
-	var r [32]byte
-	rand.Read(r[:])
+	r := make([]byte, 32)
+	rand.Read(r)
 
-	var m [32]byte
-	copy(m[:], "Hello World")
-	t.Logf("message: %s", m)
+	m := make([]byte, 32)
+	copy(m, "Hello World")
 
-	c := KPKEEncrypt(ekPKE, m[:], r[:], k, eta1, eta2, du, dv)
+	c := KPKEEncrypt(ekPKE, m, r, k, eta1, eta2, du, dv)
 
-	t.Logf("-----")
+	dm := KPKEDecrypt(dkPKE, c, k, du, dv)
 
-	dm := KPKEDecrypt(dkPKE, c, k, eta1, eta2, du, dv)
-	t.Logf("decrypted message: %s", dm)
+	if !bytes.Equal(m, dm) {
+		t.Errorf("%q != %q", m, dm)
+	}
 }
