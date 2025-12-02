@@ -13,7 +13,7 @@ type (
 	polynomial [256]uintq
 )
 
-func Add(a, b polynomial) polynomial {
+func add(a, b polynomial) polynomial {
 	var c polynomial
 	for i := range a {
 		c[i] = (a[i] + b[i]) % q
@@ -21,7 +21,7 @@ func Add(a, b polynomial) polynomial {
 	return c
 }
 
-func Sub(a, b polynomial) polynomial {
+func sub(a, b polynomial) polynomial {
 	var c polynomial
 	for i := range a {
 		c[i] = (q + a[i] - b[i]) % q
@@ -33,7 +33,7 @@ func vectorAdd(a, b []polynomial) []polynomial {
 	k := len(a)
 	c := make([]polynomial, k)
 	for i := range k {
-		c[i] = Add(a[i], b[i])
+		c[i] = add(a[i], b[i])
 	}
 	return c
 }
@@ -75,7 +75,7 @@ func NTTinv(f_ polynomial) polynomial {
 	return f
 }
 
-func VectorNTTinv(f_ []polynomial) []polynomial {
+func vectorNTTinv(f_ []polynomial) []polynomial {
 	k := len(f_)
 	g := make([]polynomial, k)
 	for i := range k {
@@ -211,7 +211,7 @@ func dotProductNTTs(t_ []polynomial, s_ []polynomial) polynomial {
 	k := len(t_)
 	var r_ polynomial
 	for i := range k {
-		r_ = Add(r_, MultiplyNTTs(t_[i], s_[i]))
+		r_ = add(r_, MultiplyNTTs(t_[i], s_[i]))
 	}
 	return r_
 }
@@ -272,9 +272,9 @@ func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2, du, dv int) []byte {
 	}
 	e2 := SamplePolyCBD(PRF(r, N, eta2))
 
-	u := vectorAdd(VectorNTTinv(matrixMultiplyNTTs(transpose(A_), y_)), e1)
+	u := vectorAdd(vectorNTTinv(matrixMultiplyNTTs(transpose(A_), y_)), e1)
 	mu := Decompress(ByteDecode(m, 1), 1)
-	v := Add(Add(NTTinv(dotProductNTTs(t_, y_)), e2), mu)
+	v := add(add(NTTinv(dotProductNTTs(t_, y_)), e2), mu)
 
 	c1 := make([]byte, 0, 32*(du*k+dv))
 	for i := range k {
@@ -299,7 +299,7 @@ func KPKEDecrypt(dkPKE []byte, c []byte, k, du, dv int) []byte {
 	for i := range k {
 		s_[i] = ByteDecodeQ(dkPKE[32*12*i : 32*12*(i+1)])
 	}
-	w := Sub(v, NTTinv(dotProductNTTs(s_, u_)))
+	w := sub(v, NTTinv(dotProductNTTs(s_, u_)))
 	m := ByteEncode(Compress(w, 1), 1)
 
 	return m

@@ -86,8 +86,8 @@ func TestMultiplyNTTs(t *testing.T) {
 	t.Run("left distributivity", func(t *testing.T) {
 		f := func(a, b, c polynomial) bool {
 			// a · (b + c) = (a · b) + (a · c)
-			d1 := MultiplyNTTs(a, Add(b, c))
-			d2 := Add(MultiplyNTTs(a, b), MultiplyNTTs(a, c))
+			d1 := MultiplyNTTs(a, add(b, c))
+			d2 := add(MultiplyNTTs(a, b), MultiplyNTTs(a, c))
 			return d1 == d2
 		}
 		if err := quick.Check(f, nil); err != nil {
@@ -97,8 +97,8 @@ func TestMultiplyNTTs(t *testing.T) {
 	t.Run("right distributivity", func(t *testing.T) {
 		f := func(a, b, c polynomial) bool {
 			// (b + c) · a = (b · a) + (c · a)
-			d1 := MultiplyNTTs(Add(b, c), a)
-			d2 := Add(MultiplyNTTs(b, a), MultiplyNTTs(c, a))
+			d1 := MultiplyNTTs(add(b, c), a)
+			d2 := add(MultiplyNTTs(b, a), MultiplyNTTs(c, a))
 			return d1 == d2
 		}
 		if err := quick.Check(f, nil); err != nil {
