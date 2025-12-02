@@ -1,6 +1,7 @@
 package mlkem
 
 import (
+	"bytes"
 	"crypto/sha3"
 )
 
@@ -149,6 +150,16 @@ func H(s []byte) []byte {
 	h := sha3.New256()
 	h.Write(s)
 	return h.Sum(nil)
+}
+
+// J(𝑠, 𝑡) ∶= SHAKE256(𝑠‖𝑡, 8 ⋅ 32)
+func J(s, t []byte) []byte {
+	h := sha3.NewSHAKE256()
+	h.Write(s)
+	h.Write(t)
+	r := make([]byte, 32)
+	h.Read(r)
+	return r
 }
 
 // PRF𝜂(𝑠, 𝑏) ∶= SHAKE256(𝑠‖𝑏, 8 ⋅ 64 ⋅ 𝜂)
@@ -313,6 +324,21 @@ func Encaps_internal(ek, m []byte, k, eta1, eta2, du, dv int) ([]byte, []byte) {
 	K, r := G(m, H(ek))
 	c := KPKEEncrypt(ek, m, r, k, eta1, eta2, du, dv)
 	return K, c
+}
+
+func Decaps_internal(dk, c []byte, k, eta1, eta2, du, dv int) []byte {
+	dkPKE := dk[0 : 384*k]
+	ekPKE := dk[384*k : 768*k+32]
+	h := dk[768*k+32 : 768*k+64]
+	z := dk[768*+64 : 768*+96]
+	m := KPKEDecrypt(dkPKE, c, k, du, dv)
+	K, r := G(m, h)
+	K_ := J(z, c)
+	c_ := KPKEEncrypt(ekPKE, m, r, k, eta1, eta2, du, dv)
+	if !bytes.Equal(c, c_) {
+		copy(K, K_)
+	}
+	return K
 }
 
 func ByteEncodeQ(f polynomial) []byte {
