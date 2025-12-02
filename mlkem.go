@@ -135,6 +135,15 @@ func SampleNTT(b []byte) polynomial {
 	return a
 }
 
+// G(𝑑, 𝑘) ∶= SHA3-512(𝑑‖𝑘)
+func G(d []byte, k byte) ([]byte, []byte) {
+	g := sha3.New512()
+	g.Write(d)
+	g.Write([]byte{k})
+	b := g.Sum(nil)
+	return b[:32], b[32:]
+}
+
 // H(𝑠) ∶= SHA3-256(𝑠)
 func H(s []byte) []byte {
 	h := sha3.New256()
@@ -153,12 +162,7 @@ func PRF(s []byte, b byte, eta int) []byte {
 }
 
 func KPKEKeyGen(d []byte, k, eta1 int) ([]byte, []byte) {
-	var b [64]byte
-	g := sha3.New512()
-	g.Write(d)
-	g.Write([]byte{byte(k)})
-	g.Sum(b[:0])
-	ro, sigma := b[:32], b[32:]
+	ro, sigma := G(d, byte(k))
 
 	var roji [32 + 2]byte
 	copy(roji[:], ro)
