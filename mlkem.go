@@ -29,7 +29,7 @@ func Sub(a, b polynomial) polynomial {
 	return c
 }
 
-func VectorAdd(a, b []polynomial) []polynomial {
+func vectorAdd(a, b []polynomial) []polynomial {
 	k := len(a)
 	c := make([]polynomial, k)
 	for i := range k {
@@ -183,7 +183,7 @@ func KPKEKeyGen(d []byte, k, eta1 int) ([]byte, []byte) {
 		N++
 	}
 
-	t_ := VectorAdd(MatrixMultiplyNTTs(A_, s_), e_)
+	t_ := vectorAdd(matrixMultiplyNTTs(A_, s_), e_)
 
 	ekPKE := make([]byte, 0, int(k)*(32*12)+32)
 	for i := range k {
@@ -198,13 +198,20 @@ func KPKEKeyGen(d []byte, k, eta1 int) ([]byte, []byte) {
 	return ekPKE, dkPKE
 }
 
-func MatrixMultiplyNTTs(A_ [][]polynomial, s_ []polynomial) []polynomial {
+func matrixMultiplyNTTs(A_ [][]polynomial, s_ []polynomial) []polynomial {
 	k := len(A_)
 	r_ := make([]polynomial, k)
 	for i := range k {
-		for j := range k {
-			r_[i] = Add(r_[i], MultiplyNTTs(A_[i][j], s_[j]))
-		}
+		r_[i] = dotProductNTTs(A_[i], s_)
+	}
+	return r_
+}
+
+func dotProductNTTs(t_ []polynomial, s_ []polynomial) polynomial {
+	k := len(t_)
+	var r_ polynomial
+	for i := range k {
+		r_ = Add(r_, MultiplyNTTs(t_[i], s_[i]))
 	}
 	return r_
 }
@@ -221,15 +228,6 @@ func transpose(a [][]polynomial) [][]polynomial {
 		}
 	}
 	return r
-}
-
-func VectorMultiplyNTTs(t_ []polynomial, s_ []polynomial) polynomial {
-	k := len(t_)
-	var r_ polynomial
-	for i := range k {
-		r_ = Add(r_, MultiplyNTTs(t_[i], s_[i]))
-	}
-	return r_
 }
 
 func KeyGen_internal(d, z []byte, k, eta1 int) ([]byte, []byte) {
@@ -274,9 +272,9 @@ func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2, du, dv int) []byte {
 	}
 	e2 := SamplePolyCBD(PRF(r, N, eta2))
 
-	u := VectorAdd(VectorNTTinv(MatrixMultiplyNTTs(transpose(A_), y_)), e1)
+	u := vectorAdd(VectorNTTinv(matrixMultiplyNTTs(transpose(A_), y_)), e1)
 	mu := Decompress(ByteDecode(m, 1), 1)
-	v := Add(Add(NTTinv(VectorMultiplyNTTs(t_, y_)), e2), mu)
+	v := Add(Add(NTTinv(dotProductNTTs(t_, y_)), e2), mu)
 
 	c1 := make([]byte, 0, 32*(du*k+dv))
 	for i := range k {
@@ -301,7 +299,7 @@ func KPKEDecrypt(dkPKE []byte, c []byte, k, du, dv int) []byte {
 	for i := range k {
 		s_[i] = ByteDecodeQ(dkPKE[32*12*i : 32*12*(i+1)])
 	}
-	w := Sub(v, NTTinv(VectorMultiplyNTTs(s_, u_)))
+	w := Sub(v, NTTinv(dotProductNTTs(s_, u_)))
 	m := ByteEncode(Compress(w, 1), 1)
 
 	return m
