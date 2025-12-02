@@ -224,10 +224,14 @@ func TestCompressDecompress(t *testing.T) {
 
 	t.Run("compress-decompress", func(t *testing.T) {
 		absDiff := func(a, b uintq) uintq {
-			if a > b {
-				return a - b
+			d := a - b
+			if b > a {
+				d = b - a
 			}
-			return b - a
+			if d == q-1 {
+				d = 1
+			}
+			return d
 		}
 		for _, d := range []int{10, 11} {
 			t.Run(fmt.Sprintf("d=%d", d), func(t *testing.T) {
@@ -244,6 +248,20 @@ func TestCompressDecompress(t *testing.T) {
 					t.Error(err)
 				}
 			})
+		}
+	})
+	t.Run("compress-decompress-q-1", func(t *testing.T) {
+		// 4.2.1 Conversion and Compression Algorithms
+		// Second, if 𝑑 is large (i.e., close to 12), compression followed by
+		// decompression does not significantly alter the value.
+		const d = 10
+		f := polynomial{q - 1}
+
+		// Compressing and decompressing q-1 results in 0.
+		// Consider this insignificant alteration modulo q ¯\_(ツ)_/¯
+		g := Decompress(Compress(f, d), d)
+		if g[0] != 0 {
+			t.Error("expected zero")
 		}
 	})
 }
