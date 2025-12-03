@@ -1,3 +1,6 @@
+// Package mlkem implements Module-Lattice-Based Key-Encapsulation Mechanism ([ML-KEM]).
+//
+// [ML-KEM]: https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf
 package mlkem
 
 import (
