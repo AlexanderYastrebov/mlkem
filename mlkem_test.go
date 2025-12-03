@@ -11,6 +11,30 @@ import (
 	"testing/quick"
 )
 
+func TestParameterSet(t *testing.T) {
+	for _, p := range []ParameterSet{
+		MLKEM_512, MLKEM_768, MLKEM_1024,
+	} {
+		t.Run(p.String(), func(t *testing.T) {
+			ek, dk := p.KeyGen()
+
+			K1, c, err := p.Encaps(ek)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			K2, err := p.Decaps(dk, c)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !bytes.Equal(K1, K2) {
+				t.Errorf("%x != %x", K1, K2)
+			}
+		})
+	}
+}
+
 func (polynomial) Generate(*mrand.Rand, int) reflect.Value {
 	var f polynomial
 	binary.Read(rand.Reader, binary.NativeEndian, &f)
