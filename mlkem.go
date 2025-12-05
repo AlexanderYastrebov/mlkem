@@ -45,6 +45,16 @@ func (p *ParameterSet) KeyGen() (EncapsulationKey, DecapsulationKey) {
 	return ek, dk
 }
 
+// KeySeed produces an encapsulation key and a decapsulation key from 64-byte d‖z seed.
+func (p *ParameterSet) KeySeed(seed []byte) (EncapsulationKey, DecapsulationKey) {
+	if len(seed) != 64 {
+		panic("invalid seed")
+	}
+	d, z := seed[:32], seed[32:]
+	ek, dk := internal.KeyGen_internal(d[:], z[:], p.k, p.eta1)
+	return ek, dk
+}
+
 // The encapsulation algorithm accepts an encapsulation key as input,
 // generates randomness internally, and outputs a ciphertext and a shared key.
 func (p *ParameterSet) Encaps(ek EncapsulationKey) (SharedKey, Ciphertext, error) {
