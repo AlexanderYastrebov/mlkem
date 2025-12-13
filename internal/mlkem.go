@@ -187,24 +187,24 @@ func KPKEKeyGen(d []byte, k, eta1 int) ([]byte, []byte) {
 	var N byte
 	s_ := make([]polynomial, k)
 	for i := range k {
-		s_[i] = NTT(SamplePolyCBD(PRF(sigma, N, int(eta1))))
+		s_[i] = NTT(SamplePolyCBD(PRF(sigma, N, eta1)))
 		N++
 	}
 	e_ := make([]polynomial, k)
 	for i := range k {
-		e_[i] = NTT(SamplePolyCBD(PRF(sigma, N, int(eta1))))
+		e_[i] = NTT(SamplePolyCBD(PRF(sigma, N, eta1)))
 		N++
 	}
 
 	t_ := vectorAdd(matrixMultiplyNTTs(A_, s_), e_)
 
-	ekPKE := make([]byte, 0, int(k)*(32*12)+32)
+	ekPKE := make([]byte, 0, k*(32*12)+32)
 	for i := range k {
 		ekPKE = append(ekPKE, ByteEncodeQ(t_[i])...)
 	}
 	ekPKE = append(ekPKE, ro...)
 
-	dkPKE := make([]byte, 0, int(k)*32*12)
+	dkPKE := make([]byte, 0, k*32*12)
 	for i := range k {
 		dkPKE = append(dkPKE, ByteEncodeQ(s_[i])...)
 	}
