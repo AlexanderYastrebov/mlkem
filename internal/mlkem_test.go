@@ -160,8 +160,8 @@ func TestSampleNTT(t *testing.T) {
 	}
 
 	t.Run("quick", func(t *testing.T) {
-		f := func(b [34]byte) bool {
-			f := SampleNTT(b[:])
+		f := func(ro [32]byte, j, i byte) bool {
+			f := SampleNTT(ro[:], j, i)
 			return testPolynomial(f)
 		}
 		if err := quick.Check(f, nil); err != nil {
@@ -172,8 +172,9 @@ func TestSampleNTT(t *testing.T) {
 	t.Run("allocs", func(t *testing.T) {
 		b := make([]byte, 34)
 		rand.Read(b)
+		ro, j, i := b[:32], b[32], b[33]
 		avg := testing.AllocsPerRun(1, func() {
-			_ = SampleNTT(b)
+			_ = SampleNTT(ro, j, i)
 		})
 		if avg > 0 {
 			t.Errorf("Non-zero allocs: %f", avg)

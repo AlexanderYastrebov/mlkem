@@ -114,10 +114,11 @@ func SamplePolyCBD(b []byte) polynomial {
 	return f
 }
 
-func SampleNTT(b []byte) polynomial {
+func SampleNTT(b []byte, jj, ii byte) polynomial {
 	var a polynomial
 	xof := sha3.NewSHAKE128()
 	xof.Write(b)
+	xof.Write([]byte{jj, ii})
 	var c [3]byte
 	j := 0
 	for j < 256 {
@@ -175,14 +176,11 @@ func PRF(s []byte, b byte, eta int) []byte {
 func KPKEKeyGen(d []byte, k, eta1 int) ([]byte, []byte) {
 	ro, sigma := G(d, []byte{byte(k)})
 
-	var roji [32 + 2]byte
-	copy(roji[:], ro)
 	A_ := make([][]polynomial, k)
-	for i := range k {
+	for i := range byte(k) {
 		A_[i] = make([]polynomial, k)
-		for j := range k {
-			roji[32], roji[33] = byte(j), byte(i)
-			A_[i][j] = SampleNTT(roji[:])
+		for j := range byte(k) {
+			A_[i][j] = SampleNTT(ro, j, i)
 		}
 	}
 
@@ -252,14 +250,11 @@ func KPKEEncrypt(ekPKE []byte, m, r []byte, k, eta1, eta2, du, dv int) []byte {
 	}
 	ro := ekPKE[384*k : 384*k+32]
 
-	var roji [32 + 2]byte
-	copy(roji[:], ro)
 	A_ := make([][]polynomial, k)
-	for i := range k {
+	for i := range byte(k) {
 		A_[i] = make([]polynomial, k)
-		for j := range k {
-			roji[32], roji[33] = byte(j), byte(i)
-			A_[i][j] = SampleNTT(roji[:])
+		for j := range byte(k) {
+			A_[i][j] = SampleNTT(ro, j, i)
 		}
 	}
 
